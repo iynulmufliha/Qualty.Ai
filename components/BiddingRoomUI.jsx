@@ -1,10 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { FaMapMarkerAlt, FaTrashAlt } from "react-icons/fa";
 import Joyride from "react-joyride";
 
 export default function BiddingRoomUI({ onConfirmBid }) {
   const [view, setView] = useState("requests");
   const [runJoyride, setRunJoyride] = useState(true);
+  const [showBids, setShowBids] = useState(false);
 
   const request = {
     category: "Agricultural & Food Commodities",
@@ -16,78 +17,93 @@ export default function BiddingRoomUI({ onConfirmBid }) {
     date: "12/22/2025",
   };
 
+  const handleViewBids = () => {
+    setRunJoyride(false);
+    setShowBids(false);
+    setTimeout(() => {
+      setView("bids");
+      setShowBids(true);
+      setRunJoyride(true);
+    }, 1000); 
+  };
+
   return (
     <>
       {/* ---------------- JOYRIDE ---------------- */}
       <Joyride
-  run={runJoyride}
-  steps={
-    view === "requests"
-      ? [
-          {
-            target: ".view-bids-btn",
-            content:
-              "Click here to view inspector bids for this request.",
-            placement: "bottom",
-            disableBeacon: true,
-            disableScrolling: true,
-            spotlightPadding: 6,
-            styles: {
-              tooltip: {
-                fontSize: "0.7rem",
-                padding: "6px 10px",
-                maxWidth: "180px",
-                borderRadius: "6px",
-              },
-              overlay: {
-                backgroundColor: "rgba(0,0,0,0.3)", 
-              },
-              buttonNext: { display: "none" },
-              buttonBack: { display: "none" },
-              buttonSkip: { display: "none" },
-            },
-            spotlightClicks: true,
-          },
-        ]
-      : [
-          {
-            target: ".confirm-bid-btn",
-            content:
-              "Once you click this button, you will need to pay 30% initial payment to access the inspection chat room.",
-            placement: "right",
-            disableBeacon: true,
-            disableScrolling: true,
-            spotlightPadding: 6,
-            styles: {
-              tooltip: {
-                fontSize: "0.7rem",
-                padding: "8px 12px",
-                maxWidth: "220px",
-                borderRadius: "6px",
-              },
-              overlay: {
-                backgroundColor: "rgba(0,0,0,0.3)", 
-              },
-              buttonNext: { display: "none" },
-              buttonBack: { display: "none" },
-              buttonSkip: { display: "none" },
-            },
-            spotlightClicks: true,
-          },
-        ]
-  }
-  continuous={false}
-  showProgress={false}
-  showSkipButton={false}
-  hideCloseButton={true}
-/>
-
+        run={runJoyride}
+        steps={
+          view === "requests"
+            ? [
+                {
+                  target: ".view-bids-btn",
+                  content:
+                    "Click here to view inspector bids for this request.",
+                  placement: "bottom",
+                  disableBeacon: true,
+                  disableScrolling: true,
+                  disableOverlay: true,
+                  spotlightPadding: 6,
+                  styles: {
+                    tooltip: {
+                      fontSize: "0.7rem",
+                      padding: "6px 10px",
+                      maxWidth: "180px",
+                      borderRadius: "6px",
+                    },
+                    overlay: {
+                      backgroundColor: "rgba(0,0,0,0.3)",
+                    },
+                    buttonNext: { display: "none" },
+                    buttonBack: { display: "none" },
+                    buttonSkip: { display: "none" },
+                  },
+                  spotlightClicks: true,
+                },
+              ]
+            : [
+                {
+                  target: ".confirm-bid-btn",
+                  content:
+                    "Once you click this button, you will need to pay 30% initial payment to access the inspection chat room.",
+                  placement: "right",
+                  disableBeacon: true,
+                  disableOverlay: true,
+                  disableScrolling: true,
+                  spotlightPadding: 6,
+                  styles: {
+                    tooltip: {
+                      fontSize: "0.7rem",
+                      padding: "8px 12px",
+                      maxWidth: "220px",
+                      borderRadius: "6px",
+                    },
+                    overlay: {
+                      backgroundColor: "rgba(0,0,0,0.3)",
+                    },
+                    buttonNext: { display: "none" },
+                    buttonBack: { display: "none" },
+                    buttonSkip: { display: "none" },
+                  },
+                  spotlightClicks: true,
+                },
+              ]
+        }
+        continuous={false}
+        showProgress={false}
+        showSkipButton={false}
+        hideCloseButton={true}
+      />
 
       {/* ================= REQUEST VIEW ================= */}
       <div
-        className={`w-full bg-gray-50 p-6 scale-[0.9] ${
-          view !== "requests" && "hidden"
+        className={`transition-container w-full bg-gray-50 p-6 scale-[0.9] ${
+          view !== "requests" ? "hidden" : ""
         }`}
+        style={{
+          transition: "all 1s ease",
+          opacity: view === "requests" ? 1 : 0,
+        }}
       >
         <h2 className="text-lg font-semibold text-center mb-6">
           Your Inspection Requests
@@ -125,14 +141,7 @@ export default function BiddingRoomUI({ onConfirmBid }) {
 
           <button
             className="view-bids-btn w-full bg-black text-white py-2 rounded text-xs"
-            onClick={() => {
-              setRunJoyride(false);
-              setView("bids");
-
-              setTimeout(() => {
-                setRunJoyride(true);
-              }, 300);
-            }}
+            onClick={handleViewBids}
           >
             View Bids
           </button>
@@ -141,9 +150,13 @@ export default function BiddingRoomUI({ onConfirmBid }) {
 
       {/* ================= BIDS VIEW ================= */}
       <div
-        className={`w-full bg-white p-8 scale-[0.8] origin-top ${
-          view !== "bids" && "hidden"
+        className={`transition-container w-full bg-white p-8 scale-[0.8] origin-top ${
+          view !== "bids" ? "hidden" : ""
         }`}
+        style={{
+          transition: "all 1s ease",
+          opacity: showBids ? 1 : 0,
+        }}
       >
         <div className="text-center mb-8">
           <h2 className="text-2xl font-semibold text-gray-900">

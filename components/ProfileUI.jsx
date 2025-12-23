@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from "react";
 import Joyride, { STATUS } from "react-joyride";
 import { User, Mail, Phone, MapPin, FileText, X as XIcon } from "lucide-react";
 
-// Mock user data
 const MOCK_USER = {
   name: "John Doe",
   email: "example@email.com",
@@ -288,3 +287,7 @@ const CertificateBlock = ({ label, fileUrl, onFileChange, localPreview = null, o
 };
 
 export default ProfileUI;
+
+
+
+

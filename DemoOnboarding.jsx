@@ -8,6 +8,7 @@ import DetailAnalysisUI from "./components/DetailAnalysisUI.jsx";
 import PaymentUI from "./components/PaymentUI.jsx";
 import HistoryUI from "./components/HistoryUI.jsx";
 import ProfileUI from "./components/ProfileUI.jsx";
+import Joyride, { STATUS } from "react-joyride";
 
 import {
   UserCircle,
@@ -18,7 +19,6 @@ import {
   LineChart,
   CreditCard,
   History,
-  ShoppingCart,
 } from "lucide-react";
 
 // ==============================
@@ -30,7 +30,9 @@ function PreLoginModal({ onSubmit }) {
 
   const handleSubmit = () => {
     if (!name || !email) return alert("Please fill in both fields!");
-    onSubmit({ name, email });
+    setTimeout(() => {
+      onSubmit({ name, email });
+    }, 1500); 
   };
 
   return (
@@ -81,7 +83,6 @@ function LoginSlide({ onNext }) {
   return (
     <div className="h-full flex items-center justify-center pt-16 px-6 relative">
       <div className="relative w-full max-w-md">
-        {/* Tooltip */}
         <motion.div
           initial={{ opacity: 0, y: -6 }}
           animate={{ opacity: 1, y: 0 }}
@@ -97,7 +98,6 @@ function LoginSlide({ onNext }) {
           </div>
         </motion.div>
 
-        {/* Login Form */}
         <div className="bg-white rounded-3xl p-6 shadow-xl max-w-sm mx-auto">
           <div className="text-center mb-4">
             <div className="mx-auto h-10 w-10 bg-black rounded-xl flex items-center justify-center mb-2">
@@ -137,7 +137,9 @@ function LoginSlide({ onNext }) {
             />
           </div>
           <button
-            onClick={onNext}
+            onClick={() => {
+              setTimeout(() => onNext(), 1500);
+            }}
             className="mt-4 w-full rounded-xl bg-black py-2 text-white font-medium hover:bg-black/90"
           >
             Login
@@ -152,7 +154,10 @@ function LoginSlide({ onNext }) {
 // Customer Layout
 // ==============================
 function CustomerLayout({ autoShowTooltip, onTourFinish }) {
-  const [activeSection, setActiveSection] = useState("enquiry");
+  const [activeSection, setActiveSection] = useState("dashboard");
+  const [runJoyride, setRunJoyride] = useState(true);
+  const [runBiddingTooltip, setRunBiddingTooltip] = useState(false);
+  const [runChatTooltip, setRunChatTooltip] = useState(false);
 
   const navItems = [
     { label: "Dashboard", key: "dashboard", icon: <LayoutDashboard size={20} /> },
@@ -165,49 +170,181 @@ function CustomerLayout({ autoShowTooltip, onTourFinish }) {
     { label: "Profile", key: "profile", icon: <UserCircle size={20} /> },
   ];
 
-  const handleEnquirySubmit = () => setActiveSection("bidding");
-  const handleConfirmBid = () => setActiveSection("chat");
+  const joyrideSteps = [
+    {
+      target: ".raise-enquiry-nav",
+      content: <div className="text-[11px] leading-tight">Click here to raise an enquiry</div>,
+      placement: "right-start",
+      disableBeacon: true,
+      offset: 4,
+    },
+  ];
+
+  const biddingTooltipSteps = [
+    {
+      target: ".bidding-nav",
+      content: <div className="text-[11px] leading-tight">This is the Bidding Room. Click here to proceed after submitting enquiry.</div>,
+      placement: "right-start",
+      disableBeacon: true,
+      offset: 4,
+    },
+  ];
+
+  const chatTooltipSteps = [
+    {
+      target: ".chat-nav",
+      content: <div className="text-[11px] leading-tight">Click here to access the Inspection Chat Room after confirming your bid.</div>,
+      placement: "right-start",
+      disableBeacon: true,
+      offset: 4,
+    },
+  ];
+
+  const handleEnquirySubmit = () => {
+    setTimeout(() => setRunBiddingTooltip(true), 1500);
+  };
+
+  const handleBiddingTooltipCallback = (data) => {
+    const { status } = data;
+    if ([STATUS.FINISHED, STATUS.SKIPPED].includes(status)) {
+      setTimeout(() => {
+        setRunBiddingTooltip(false);
+        setActiveSection("bidding");
+      }, 1500);
+    }
+  };
+
+  const handleConfirmBid = () => {
+    setTimeout(() => setRunChatTooltip(true), 1500);
+  };
+
+  const handleChatTooltipCallback = (data) => {
+    const { status } = data;
+    if ([STATUS.FINISHED, STATUS.SKIPPED].includes(status)) {
+      setTimeout(() => setRunChatTooltip(false), 1500);
+    }
+  };
+
+  const handleNavClick = (key) => {
+    setTimeout(() => {
+      setActiveSection(key);
+      setRunJoyride(false);
+      setRunBiddingTooltip(false);
+      setRunChatTooltip(false);
+    }, 1500);
+  };
 
   return (
-    <div className="h-full flex flex-col max-w-4xl mx-auto bg-white rounded-3xl shadow-xl overflow-hidden">
-      <div className="flex justify-between items-center p-4 border-b border-gray-200 bg-white">
-        <h1 className="font-semibold text-[14px]">Customer Dashboard</h1>
-      </div>
-      <div className="flex flex-1 h-full">
-        <aside className="w-48 bg-white border-r border-gray-200 flex flex-col text-[10px] divide-y divide-gray-200">
-          <div className="p-4 flex items-center gap-2">
-            <UserCircle size={20} />
-            <span className="font-semibold">Username</span>
+    <>
+      <Joyride
+        steps={joyrideSteps}
+        run={runJoyride}
+        continuous={false}
+        showProgress={false}
+        showSkipButton={false}
+        hideCloseButton
+        disableOverlay
+        spotlightClicks
+        styles={{
+          options: { zIndex: 10000 },
+          tooltip: { padding: "4px", borderRadius: "6px", fontSize: "11px", maxWidth: "120px" },
+          tooltipContainer: { textAlign: "left" },
+          buttonClose: { display: "none !important" },
+          buttonSkip: { display: "none" },
+          tooltipFooter: { display: "none" },
+        }}
+        callback={(data) => {
+          const { status } = data;
+          if ([STATUS.FINISHED, STATUS.SKIPPED].includes(status)) setRunJoyride(false);
+        }}
+      />
+      <Joyride
+        steps={biddingTooltipSteps}
+        run={runBiddingTooltip}
+        continuous={false}
+        showProgress={false}
+        showSkipButton={false}
+        hideCloseButton
+        disableOverlay
+        spotlightClicks
+        styles={{
+          options: { zIndex: 10000 },
+          tooltip: { padding: "4px", borderRadius: "6px", fontSize: "11px", maxWidth: "120px" },
+          tooltipContainer: { textAlign: "left" },
+          buttonClose: { display: "none !important" },
+          buttonSkip: { display: "none" },
+          tooltipFooter: { display: "none" },
+        }}
+        callback={handleBiddingTooltipCallback}
+      />
+      <Joyride
+        steps={chatTooltipSteps}
+        run={runChatTooltip}
+        continuous={false}
+        showProgress={false}
+        showSkipButton={false}
+        hideCloseButton
+        disableOverlay
+        spotlightClicks
+        styles={{
+          options: { zIndex: 10000 },
+          tooltip: { padding: "4px", borderRadius: "6px", fontSize: "11px", maxWidth: "120px" },
+          tooltipContainer: { textAlign: "left" },
+          buttonClose: { display: "none !important" },
+          buttonSkip: { display: "none" },
+          tooltipFooter: { display: "none" },
+        }}
+        callback={handleChatTooltipCallback}
+      />
+
+      {/* Layout */}
+      <div className="h-full flex flex-col max-w-4xl mx-auto bg-white rounded-3xl shadow-xl overflow-hidden">
+        <div className="flex justify-between items-center p-4 border-b border-gray-200 bg-white">
+          <h1 className="font-semibold text-[14px]">Customer Dashboard</h1>
+        </div>
+
+        <div className="flex flex-1 h-full">
+          <aside className="w-48 bg-white border-r border-gray-200 flex flex-col text-[10px] divide-y divide-gray-200">
+            <div className="p-4 flex items-center gap-2">
+              <UserCircle size={20} />
+              <span className="font-semibold">Username</span>
+            </div>
+
+            <nav className="flex-1 overflow-y-auto p-2 space-y-1">
+              {navItems.map((item) => (
+                <button
+                  key={item.key}
+                  className={`w-full flex items-center gap-2 px-2 py-1 rounded ${
+                    item.key === "enquiry"
+                      ? "raise-enquiry-nav"
+                      : item.key === "bidding"
+                      ? "bidding-nav"
+                      : item.key === "chat"
+                      ? "chat-nav"
+                      : ""
+                  } ${activeSection === item.key ? "bg-black text-white" : "hover:bg-gray-100 text-gray-600"}`}
+                  onClick={() => handleNavClick(item.key)}
+                >
+                  {item.icon}
+                  <span className="text-[10px] font-medium">{item.label}</span>
+                </button>
+              ))}
+            </nav>
+          </aside>
+
+          <div className="flex-1 p-4 overflow-y-auto">
+            {activeSection === "dashboard" && <Dashboard />}
+            {activeSection === "enquiry" && <RaiseEnquiry onSubmitEnquiry={handleEnquirySubmit} />}
+            {activeSection === "bidding" && <BiddingRoomUI onConfirmBid={handleConfirmBid} />}
+            {activeSection === "chat" && <ChatUI onTourFinish={onTourFinish} />}
+            {activeSection === "analysis" && <DetailAnalysisUI />}
+            {activeSection === "payments" && <PaymentUI />}
+            {activeSection === "history" && <HistoryUI />}
+            {activeSection === "profile" && <ProfileUI />}
           </div>
-          <nav className="flex-1 overflow-y-auto p-2 space-y-1">
-            {navItems.map((item) => (
-              <button
-                key={item.key}
-                className={`w-full flex items-center gap-2 px-2 py-1 rounded ${
-                  activeSection === item.key
-                    ? "bg-black text-white"
-                    : "hover:bg-gray-100 text-gray-600"
-                }`}
-                onClick={() => setActiveSection(item.key)}
-              >
-                {item.icon}
-                <span className="text-[10px] font-medium">{item.label}</span>
-              </button>
-            ))}
-          </nav>
-        </aside>
-        <div className="flex-1 p-4 overflow-y-auto">
-          {activeSection === "dashboard" && <Dashboard />}
-          {activeSection === "enquiry" && <RaiseEnquiry onSubmitEnquiry={handleEnquirySubmit} />}
-          {activeSection === "bidding" && <BiddingRoomUI onConfirmBid={handleConfirmBid} />}
-          {activeSection === "chat" && <ChatUI onTourFinish={onTourFinish} />}
-          {activeSection === "analysis" && <DetailAnalysisUI />}
-          {activeSection === "payments" && <PaymentUI />}
-          {activeSection === "history" && <HistoryUI />}
-          {activeSection === "profile" && <ProfileUI />}
         </div>
       </div>
-    </div>
+    </>
   );
 }
 
@@ -219,47 +356,33 @@ export default function DemoOnboarding() {
   const [autoShowTooltip, setAutoShowTooltip] = useState(false);
   const [showPreLogin, setShowPreLogin] = useState(true);
 
-  // ---------------- Navigation ----------------
-  const next = () => setStep((s) => Math.min(s + 1, slidesRef.current.length - 1));
-  const skip = () => setStep(slidesRef.current.length - 1);
-
-  // ---------------- Pre-login submit ----------------
-  const handlePreLoginSubmit = (data) => {
-    console.log("User info:", data);
-    setShowPreLogin(false);
-  };
-
- const ThankYouSlide = () => (
-  <div className="h-full flex flex-col items-center justify-center px-6 gap-4">
-    <div className="text-center text-white">
-      <h2 className="text-2xl font-semibold mb-2">Thank You!</h2>
-      <p className="text-sm">
-        Thank you for viewing the demo. You can explore the real product now!
-      </p>
-    </div>
-    <button
-      onClick={() => setStep(0)}
-      className="mt-4 rounded-xl bg-white text-black px-6 py-2 font-medium hover:bg-white/90 transition"
-    >
-      Restart Demo
-    </button>
-  </div>
-);
-
   const slidesRef = useRef([]);
   slidesRef.current = [
-    <LoginSlide key="login" onNext={() => { setStep(1); setAutoShowTooltip(true); }} />,
-    <CustomerLayout key="customer" autoShowTooltip={autoShowTooltip} onTourFinish={next} />,
-    <ThankYouSlide key="thankyou" />
+    <LoginSlide key="login" onNext={() => setTimeout(() => { setStep(1); setAutoShowTooltip(true); }, 1500)} />,
+    <CustomerLayout key="customer" autoShowTooltip={autoShowTooltip} onTourFinish={() => setTimeout(() => setStep(2), 1500)} />,
+    <div key="thankyou" className="h-full flex flex-col items-center justify-center px-6 gap-4">
+      <div className="text-center text-white">
+        <h2 className="text-2xl font-semibold mb-2">Thank You!</h2>
+        <p className="text-sm">Thank you for viewing the demo. You can explore the real product now!</p>
+      </div>
+      <button
+        onClick={() => setTimeout(() => setStep(0), 1500)}
+        className="mt-4 rounded-xl bg-white text-black px-6 py-2 font-medium hover:bg-white/90 transition"
+      >
+        Restart Demo
+      </button>
+    </div>,
   ];
+
   const slides = slidesRef.current;
 
-  useEffect(() => {
-    if (autoShowTooltip) {
-      const timeout = setTimeout(() => setAutoShowTooltip(false), 100);
-      return () => clearTimeout(timeout);
-    }
-  }, [autoShowTooltip]);
+  const next = () => setTimeout(() => setStep((s) => Math.min(s + 1, slides.length - 1)), 1500);
+  const skip = () => setTimeout(() => setStep(slides.length - 1), 1500);
+
+  const handlePreLoginSubmit = (data) => {
+    setTimeout(() => setShowPreLogin(false), 1500);
+    console.log("User info:", data);
+  };
 
   return (
     <div className="relative w-full max-w-5xl mx-auto mt-4 mb-10">
@@ -301,7 +424,7 @@ export default function DemoOnboarding() {
           <div className="flex gap-2">
             {step > 0 && (
               <button
-                onClick={() => setStep((s) => Math.max(s - 1, 0))}
+                onClick={() => setTimeout(() => setStep((s) => Math.max(s - 1, 0)), 1500)}
                 className="rounded-full bg-white/20 px-5 py-2 text-sm font-medium text-white hover:bg-white/30"
               >
                 Back
@@ -319,3 +442,4 @@ export default function DemoOnboarding() {
     </div>
   );
 }
+ 

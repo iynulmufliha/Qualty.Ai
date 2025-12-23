@@ -10,6 +10,10 @@ export default function RaiseEnquiryUI({ onSubmitEnquiry }) {
     }, 300); 
     return () => clearTimeout(timer);
   }, []);
+   const handleSubmit = () => {
+    setRunJoyride(false);
+    onSubmitEnquiry();
+  };
 
   const handleJoyrideCallback = (data) => {
     const { status, type } = data;
@@ -36,6 +40,7 @@ export default function RaiseEnquiryUI({ onSubmitEnquiry }) {
             disableBeacon: true,
             disableFlip: true,
             disableScrolling: true,
+            disableOverlay: true, 
             styles: {
               tooltip: {
                 fontSize: "0.6rem",
@@ -147,7 +152,7 @@ export default function RaiseEnquiryUI({ onSubmitEnquiry }) {
         <div className="px-4">
           <button
             className="submit-enquiry-btn w-full bg-black text-white py-3 rounded font-medium"
-            onClick={onSubmitEnquiry}
+            onClick={handleSubmit}
           >
             Submit Enquiry
           </button>

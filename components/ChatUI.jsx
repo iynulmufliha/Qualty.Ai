@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from "react";
+import React, { useRef, useState } from "react";
 import Joyride, { STATUS } from "react-joyride";
 import {
   FiPaperclip,
@@ -24,88 +24,78 @@ export default function ChatUI({ onTourFinish }) {
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState(null);
 
-  // ========================== JOYRIDE STEPS ==========================
+  // ========================== JOYRIDE ==========================
   const steps = [
     {
-      target: ".chat-header",
-      content: "This shows the inspector you are chatting with.",
-      placement: "bottom",
-      disableBeacon: true,
-      spotlightClicks: false,
-    },
-    {
-      target: ".progress-toggle, .inspection-progress",
-      content: "Use these to view the inspection progress stages and details.",
-      placement: "bottom",
-      disableBeacon: true,
-    },
-    {
-      target: ".chat-area, .attach-btn, .message-input, .send-btn",
-      content: "View all messages here, attach files, type, and send messages to the inspector.",
-      placement: "top",
+      target: ".chat-header", // attach tooltip near header (non-intrusive)
+      content: "This is your chat area. You can send messages or check progress here.",
+      placement: "right", // tooltip on the side
       disableBeacon: true,
     },
   ];
 
+  const [runTour, setRunTour] = useState(true);
+
+  const handleJoyrideCallback = (data) => {
+    const { status } = data;
+    if ([STATUS.FINISHED, STATUS.SKIPPED].includes(status)) {
+      setRunTour(false);
+      if (onTourFinish) onTourFinish();
+    }
+  };
+
   // ========================== SEND MESSAGE ==========================
   const sendMessage = () => {
     if (!input && !file) return;
-    setMessages((p) => [
-      ...p,
+    setMessages((prev) => [
+      ...prev,
       { id: Date.now(), sender: "me", text: input || "📎 File sent", time: "Now" },
     ]);
     setInput("");
     setFile(null);
     setPreview(null);
     requestAnimationFrame(() => {
-      if (scrollRef.current)
-        scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     });
   };
 
   return (
     <div className="w-full h-full flex items-center justify-center bg-gray-100 overflow-hidden">
-      {/* ---------------- JOYRIDE ---------------- */}
+      {/* ===== JOYRIDE ===== */}
       <Joyride
         steps={steps}
-        run={true}
-        continuous={true}
-        showProgress={true}
-        showSkipButton={true}
+        run={runTour}
+        continuous={false}
+        showProgress={false}
+        showSkipButton={false}
         disableScrolling={true}
         scrollToFirstStep={true}
         styles={{
-          options: {
-            primaryColor: "#000",
-            zIndex: 10000,
-          },
+          options: { primaryColor: "#000", zIndex: 10000, overlayColor: "transparent" },
           tooltip: {
-            fontSize: "0.8rem",
-            padding: "8px 12px",
+            fontSize: "0.75rem",
+            padding: "10px 14px",
             borderRadius: "6px",
+            maxWidth: "220px",
           },
-          tooltipArrow: {
-            borderTopColor: "#000",
-          },
-          buttonClose: {
-            display: "none",
+          buttonNext: { display: "none" },
+          buttonBack: { display: "none" },
+          buttonClose: { display: "none" },
+          buttonSkip: { display: "none" },
+          buttonFinish: {
+            backgroundColor: "#000",
+            color: "#fff",
+            padding: "4px 10px",
+            borderRadius: "4px",
+            fontSize: "0.7rem",
           },
         }}
-        callback={(data) => {
-          const { status, type, index } = data;
-
-          if ([STATUS.FINISHED, STATUS.SKIPPED].includes(status)) {
-            if (onTourFinish) onTourFinish();
-          }
-
-          if (type === "step:after" && index === steps.length - 1) {
-            if (onTourFinish) onTourFinish();
-          }
-        }}
+        locale={{ last: "Got it" }} // simpler button text
+        callback={handleJoyrideCallback}
       />
+
       <div className="origin-center scale-[0.9] w-full h-full max-w-[1280px] bg-white shadow-xl">
         <div className="flex flex-col lg:flex-row h-full bg-white text-black">
-    
           <aside className="hidden lg:block w-80 border-r bg-white inspection-progress">
             <div className="p-4">
               <InspectionProgress progressLevel={1} />
@@ -113,12 +103,9 @@ export default function ChatUI({ onTourFinish }) {
           </aside>
 
           <main className="flex-1 flex flex-col relative">
-            
             <div className="chat-header sticky top-0 z-40 h-[64px] border-b bg-white px-6 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-black text-white flex items-center justify-center">
-                  A
-                </div>
+                <div className="w-10 h-10 rounded-full bg-black text-white flex items-center justify-center">A</div>
                 <div>
                   <div className="font-semibold">Inspector</div>
                   <div className="text-xs text-green-600">Active now</div>
@@ -132,14 +119,11 @@ export default function ChatUI({ onTourFinish }) {
                 >
                   {progressOpen ? <FiChevronUp /> : <FiChevronDown />} Progress
                 </button>
-                <button className="border px-2 py-1 rounded">
-                  <FiPhone />
-                </button>
-                <button className="border px-2 py-1 rounded">
-                  <FiUserPlus />
-                </button>
+                <button className="border px-2 py-1 rounded"><FiPhone /></button>
+                <button className="border px-2 py-1 rounded"><FiUserPlus /></button>
               </div>
             </div>
+
             {progressOpen && (
               <div className="lg:hidden sticky top-[64px] bg-white border-b p-3 z-30 inspection-progress">
                 <InspectionProgress progressLevel={1} />
@@ -149,15 +133,8 @@ export default function ChatUI({ onTourFinish }) {
             <div className="chat-area flex-1 overflow-y-auto bg-gray-50 px-4 py-4">
               <div ref={scrollRef} className="space-y-4 pb-[88px]">
                 {messages.map((m) => (
-                  <div
-                    key={m.id}
-                    className={`flex ${m.sender === "me" ? "justify-end" : "justify-start"}`}
-                  >
-                    <div
-                      className={`${
-                        m.sender === "me" ? "bg-black text-white" : "bg-white border"
-                      } px-4 py-2 rounded-lg max-w-[70%]`}
-                    >
+                  <div key={m.id} className={`flex ${m.sender === "me" ? "justify-end" : "justify-start"}`}>
+                    <div className={`${m.sender === "me" ? "bg-black text-white" : "bg-white border"} px-4 py-2 rounded-lg max-w-[70%]`}>
                       <div>{m.text}</div>
                       <div className="text-xs opacity-60 mt-1 text-right">{m.time}</div>
                     </div>
@@ -166,23 +143,11 @@ export default function ChatUI({ onTourFinish }) {
               </div>
             </div>
 
-            {/* INPUT */}
             <div className="sticky bottom-0 bg-white border-t px-4 py-3">
               {file && (
                 <div className="flex justify-between items-center bg-gray-100 px-3 py-2 rounded mb-2">
-                  {preview ? (
-                    <img src={preview} className="h-12 rounded" />
-                  ) : (
-                    <span>{file.name}</span>
-                  )}
-                  <button
-                    onClick={() => {
-                      setFile(null);
-                      setPreview(null);
-                    }}
-                  >
-                    <FiX />
-                  </button>
+                  {preview ? <img src={preview} className="h-12 rounded" /> : <span>{file.name}</span>}
+                  <button onClick={() => { setFile(null); setPreview(null); }}><FiX /></button>
                 </div>
               )}
 
@@ -196,8 +161,7 @@ export default function ChatUI({ onTourFinish }) {
                       const f = e.target.files[0];
                       if (!f) return;
                       setFile(f);
-                      if (f.type.startsWith("image/"))
-                        setPreview(URL.createObjectURL(f));
+                      if (f.type.startsWith("image/")) setPreview(URL.createObjectURL(f));
                     }}
                   />
                 </label>
@@ -210,10 +174,7 @@ export default function ChatUI({ onTourFinish }) {
                   className="message-input flex-1 border rounded px-4 py-2"
                 />
 
-                <button
-                  onClick={sendMessage}
-                  className="send-btn bg-black text-white px-3 py-2 rounded"
-                >
+                <button onClick={sendMessage} className="send-btn bg-black text-white px-3 py-2 rounded">
                   <FiSend />
                 </button>
               </div>
